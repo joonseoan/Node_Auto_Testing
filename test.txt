@@ -1,0 +1,5 @@
+1. change scripts in package.json
+    =>  "test": "mocha",
+2. in terminal, npm test
+    ==> error. 
+3. add test folder.
