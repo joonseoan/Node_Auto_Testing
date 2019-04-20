@@ -1,4 +1,4 @@
-const { validationResult } = require('express-validator/check');
+// const { validationResult } = require('express-validator/check');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -49,23 +49,25 @@ exports.signup = (req, res, next) => {
 }
 
 exports.login = (req, res, next) => {
-    
-    const errors = validationResult(req);
-    console.log('erros: ', errors);
-    if(!errors.isEmpty()) {
-        const error = new Error('Login Validation failed');
-        error.statusCode = 422;
-        // object to an array!
-        error.data = errors.array();
-        throw error;
-    }
+    // Then
+    // const errors = validationResult(req);
+    // console.log('errors: ', errors);
+    // if(!errors.isEmpty()) {
+    //     const error = new Error('Login Validation failed');
+    //     error.statusCode = 422;
+    //     // object to an array!
+    //     error.data = errors.array();
+    //     throw error;
+    // }
 
     const { email, password } = req.body;
-    let loadedUser;
-
+    let loadedUser;    
+    
+    // then
     User.findOne({ email })
-        .then(user => {
-
+    //.exec()
+    .then(user => {
+        console.log('dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')
             if(!user) {
                 const error = new Error('Unable to find your account.');
                 error.statusCode = 401;
@@ -73,18 +75,15 @@ exports.login = (req, res, next) => {
             }
 
             loadedUser = user;
-            // return boolean type
             return bcrypt.compare(password, user.password);
-
         })
         .then(isMatched => {
-
+            console.log('mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm')
             if(!isMatched) {
                 const error = new Error('Password is wrong.');
                 error.statusCode = 401;
                 throw error;
             }
-
             const token = jwt.sign({
                 email : loadedUser.email,
                 userId: loadedUser._id.toString()
@@ -97,15 +96,70 @@ exports.login = (req, res, next) => {
                 token,
                 userId: loadedUser._id.toString()
             });
+
+           return;
+    
         })
         .catch(e => {
-
             if(!e.statusCode) {
                 e.statusCode = 500;
             }
+            // to test the throwing error.
             next(e);
+            console.log('eeeeeeeeeeeeeeeeeee in the controller ', e)
+            return e;
+        });
+    
+    // Aync
+    // try { 
 
-        })
+    //     const user = await User.findOne({ email });
+    //         //.then(user => {
+    
+    //     if(!user) {
+    //         const error = new Error('Unable to find your account.');
+    //         error.statusCode = 401;
+    //         throw error;
+    //     }
+
+    //     loadedUser = user;
+    //     // return boolean type
+    //     const  isMatched = await bcrypt.compare(password, user.password);
+
+    //     // })
+    //     //  .then(isMatched => {
+
+    //     if(!isMatched) {
+    //         const error = new Error('Password is wrong.');
+    //         error.statusCode = 401;
+    //         throw error;
+    //     }
+
+    //     const token = jwt.sign({
+    //         email : loadedUser.email,
+    //         userId: loadedUser._id.toString()
+    //         // setup expiring time : 1hour
+    //         // It is for security reason that the token can be stolen.
+    //         // ************************************
+    //     }, 'xxxx', { expiresIn : '1h' });
+
+    //         // just in case it is correct
+    //     res.status(200).json({
+    //         token,
+    //         userId: loadedUser._id.toString()
+    //     });
+
+    //     return;
+    // } catch(e) {
+
+    //     //console.log(e)
+    //     if(!e.statusCode) {
+    //         e.statusCode = 500;
+    //     }
+    //     next(e);
+    //     // to test the throwing error.
+    //     return e;
+    // }        
     
 }
 

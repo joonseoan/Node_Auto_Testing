@@ -35,17 +35,19 @@ router.put('/signup', [
 
 ], authControllers.signup);
 
-router.post('/login', [
+// router.post('/login' /* , [
 
-    body('email')
-        .trim()
-        .isEmail()
-        .withMessage('Please enter valid email.'),
-    body('password')
-        .trim()
+//     body('email')
+//         .trim()
+//         .isEmail()
+//         .withMessage('Please enter valid email.'),
+//     body('password')
+//         .trim()
 
 
-], authControllers.login);
+// ] */, authControllers.login);
+
+router.post('/login', authControllers.login);
 
 router.get('/getStatus', isAuthenticated, authControllers.getStatus);
 

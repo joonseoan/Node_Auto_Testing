@@ -6,9 +6,8 @@ const jwt = require('jsonwebtoken');
 // to get back to the original logic
 const sinon = require('sinon');
 
-
 // describe : a function to group the tests provided by mocha
-describe('Auth MW', () => {
+describe('Auth MW Test', () => {
 
     it('should throw an error if no auth header is present', () => {
         const req = {
@@ -24,11 +23,10 @@ describe('Auth MW', () => {
             get: function() {
                 return 'xyz'; // virtual token value to test
             }
-    
-        }
-        // if the token format is not correct,
-        //  "authHeader.split()" will generate an error we can't expect
-        //  Therefore thow() is empty.
+        };
+        // If the token format is not correct,
+        //  "authHeader.split()" will generate its own error we can't expect
+        // Therefore thow() should be empty.
         expect(auth_mw.bind(this, req, {})).to.throw();
     });
 
@@ -38,15 +36,18 @@ describe('Auth MW', () => {
                 return 'Bear xyz';
             }
         };
-
         // jwt.verify = { userId: 'abc' };
-
         /* 
             // might be class but...simplified.
-
             jwt : {
                 verify:  function() {
                     return{ userId: 'abc' }
+                }
+
+                OR
+
+                verify: {
+                    userId: 'abc'
                 }
             }
         */
@@ -66,10 +67,12 @@ describe('Auth MW', () => {
        */
        // can be replaced with the one as shown up and above in "jwt class!!!!!!!!" package!!!!
         
-        // jwt: object
+        // forming function only for the test
+        // jwt: main object key or can be sub key but required to be defined the first first.
         // verify: a method of the object
         sinon.stub(jwt, 'verify');
-        // only for the test, what the value should return!!!!
+
+        // defining the return only for the test, what the value should return!!!!
         jwt.verify.returns({ userId: 'abc' });
 
         // Since the stub above, it is not required.
@@ -77,11 +80,11 @@ describe('Auth MW', () => {
         //     return { userId: 'abc' };
         // }
 
-
         auth_mw(req, {}, () => {});
 
-        //  testing "req.userId = decodedToken.userId;"
-        expect(req).to.have.property('userId');
+        // testing "req.userId = decodedToken.userId;"
+        // property only
+        // expect(req).to.have.property('userId');
 
         /* 
             Important:
@@ -103,7 +106,6 @@ describe('Auth MW', () => {
 
         // get back to the original function.
         jwt.verify.restore();
-
     })
 
     it('should throw an error if the token cannot be verified', () => {
@@ -112,7 +114,6 @@ describe('Auth MW', () => {
                 return 'Bear xyz';
             }
         }
-
         // since using stub at the expect above,
         //   it does not return  { userId: 'abc' } any more.
         // jwt.verify = { userId: 'abc' }
@@ -123,7 +124,4 @@ describe('Auth MW', () => {
         expect(auth_mw.bind(this, req, {})).to.throw();
         
     })
-
 })
-
-
