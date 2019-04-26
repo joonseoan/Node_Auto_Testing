@@ -1,4 +1,7 @@
+const mongoose = require('mongoose');
 const { expect } = require('chai');
+
+const { mongoKey } = require('../config/keys')
 // Fot testing database, use sinon, stub1!!!
 const sinon = require('sinon');
 
@@ -57,6 +60,7 @@ describe('Auth controller - login', function() {
     it('should throw an error if accessing the database fails with the correct status', function(done) {
 
         sinon.stub(User, 'findOne');
+
         // defining the expectation. what will happen!
         // this error is deriven by catch statement above.
         User.findOne.throws();
@@ -64,7 +68,7 @@ describe('Auth controller - login', function() {
         // 3) dummy request
         const req = {
             body: {
-                email: 'not@aadaaa.com',
+                email: 'not@aadaqaa.com',
                 password: 'kkkkkkk'
             }
         };   
@@ -73,33 +77,118 @@ describe('Auth controller - login', function() {
         // 1) put "return" at the end of login function. => go to login function
 
         // 2) invoke the function
-        Auth.login(req, {}, () => {}).expect(result => {
-            console.log('resultrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr: ', result);
-            expect(result).to.be.an('error');
-            expect(result).to.have.property('statusCode', 500);
-            // done();
-            
-            // User.findOne.restore();
-            // must put done to let it know the async is finished
-            // done();
+        Auth.login(req, {}, () => {})
+            .then(result => {
 
-            // we should know
-            // without done(); ==> pass
-            // with done() ==> fail
-            // expect(result).to.have.property('statusCode', 200);
+                expect(result).to.be.an('error');
+                expect(result).to.have.property('statusCode', 500);
+                done();
+
+            });
             
+            
+        User.findOne.restore();
+    });
+
+    // getUserStatus in Auth Controller
+    it('should send a response with a valid user status for an existing user', (done) => {
+
+        /* 
+            exports.getStatus = (req, res, next) => {
+                const userId = req.userId;
+                if(!userId) {
+                    const error = new Error('No logged-in user exists, now.');
+                    error.statusCode = 401;
+                    throw error;
+                }
+
+                User.findById(userId)
+                    .then(user => {
+                        if(!user) {
+                            const error = new Error('No logged-in user exists, now.');
+                            error.statusCode = 401;
+                            throw error;
+                        }
+                        res.status(200).json({
+                            status: user.status
+                        });
+                    })
+                    .catch(e => {
+                        if(!e.statusCode) {
+                            e.statusCode = 500;
+                        }
+                        next(e);
+                    });
+            }
+            
+        */
+
+
+        mongoose
+        // we need to add a collection for testing. (message ==> test-message) *******
+        .connect(`mongodb+srv://joon:${mongoKey}@firstatlas-drwhc.mongodb.net/test-message`, { useNewUrlParser: true })
+        
+        // building test logic
+        .then(() => {
+
+            // when the req.userId is generated, it is not required to be stored again.
+            // const user = new User({
+            //     email: 'xxxx@xxxx.com',
+            //     password: 'ddddd',
+            //     name: 'Test',
+            //     posts: [],
+            //     // externally set up _id for testing!!!
+            //     _id: '5cad46f95ceb8237c4e1fall' // must be string 
+            // });
+
+            // return user.save();
         })
-        .end((err, result) => {
-            if(err) done(err);
-            User.findOne.restore();
-            done();
+        .then(user => {
+            // need req.userId
+            // we need to pass json ({ status: user.status }) which is set as default to the client
+
+            const req = { userId: '5cad46f95ceb8237c4e1faff'};
+            
+            // initial value to be compared 
+            /* 
+                // It is chaining implementing internal felds of res.
+                // For this reason, "this" must be returned for the next field execution.
+                res.status(200).json({
+                    status: user.status
+                });
+            
+            */
+            const res = {
+                statusCode: 500,
+                userStatus: null,
+                status: function(code) {
+                    this.statusCode = code;
+                    
+                    // Must be "this", not this.statusCode
+                    // becaus without this. we can't call "json()" method.!!!!!!!!!!!11
+                    console.log('this: ', this)
+                    return this;
+                },
+
+                // "data": { status: user.status }
+                json: function(data) {
+
+                    console.log(data);
+                    this.userStatus = data.status;
+                }
+            };
+
+            Auth.getStatus(req, res, () => {})
+            .then(() => {
+                console.log('res: ', res)
+                expect(res.statusCode).to.be.equal(200);
+                expect(res.userStatus).to.be.equal('I am new');
+                done();
+            });
         })
-        //.catch(e => {
-            // console.log('eeeeeeeeeeeeeeeeeee: ', e);
-            // done();
-        // })
-        // get back to the original function
-       //  User.findOne.restore();
-       
+        .catch(err => {
+            console.log(err);
+        });
+
     });
 });

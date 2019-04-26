@@ -48,7 +48,7 @@ exports.signup = (req, res, next) => {
         });
 }
 
-exports.login = (req, res, next) => {
+exports.login = async (req, res, next) => {
     // Then
     // const errors = validationResult(req);
     // console.log('errors: ', errors);
@@ -64,106 +64,106 @@ exports.login = (req, res, next) => {
     let loadedUser;    
     
     // then
-    User.findOne({ email })
-    //.exec()
-    .then(user => {
-        console.log('dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')
-            if(!user) {
-                const error = new Error('Unable to find your account.');
-                error.statusCode = 401;
-                throw error;
-            }
+    // User.findOne({ email })
+    // //.exec()
+    // .then(user => {
+    //     console.log('dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')
+    //         if(!user) {
+    //             const error = new Error('Unable to find your account.');
+    //             error.statusCode = 401;
+    //             throw error;
+    //         }
 
-            loadedUser = user;
-            return bcrypt.compare(password, user.password);
-        })
-        .then(isMatched => {
-            console.log('mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm')
-            if(!isMatched) {
-                const error = new Error('Password is wrong.');
-                error.statusCode = 401;
-                throw error;
-            }
-            const token = jwt.sign({
-                email : loadedUser.email,
-                userId: loadedUser._id.toString()
-                // setup expiring time : 1hour
-                // It is for security reason that the token can be stolen.
-                // ************************************
-            }, 'xxxx', { expiresIn : '1h' });
+    //         loadedUser = user;
+    //         return bcrypt.compare(password, user.password);
+    //     })
+    //     .then(isMatched => {
+    //         console.log('mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm')
+    //         if(!isMatched) {
+    //             const error = new Error('Password is wrong.');
+    //             error.statusCode = 401;
+    //             throw error;
+    //         }
+    //         const token = jwt.sign({
+    //             email : loadedUser.email,
+    //             userId: loadedUser._id.toString()
+    //             // setup expiring time : 1hour
+    //             // It is for security reason that the token can be stolen.
+    //             // ************************************
+    //         }, 'xxxx', { expiresIn : '1h' });
 
-            res.status(200).json({
-                token,
-                userId: loadedUser._id.toString()
-            });
+    //         res.status(200).json({
+    //             token,
+    //             userId: loadedUser._id.toString()
+    //         });
 
-           return;
+    //        return;
     
-        })
-        .catch(e => {
-            if(!e.statusCode) {
-                e.statusCode = 500;
-            }
-            // to test the throwing error.
-            next(e);
-            console.log('eeeeeeeeeeeeeeeeeee in the controller ', e)
-            return e;
-        });
+    //     })
+    //     .catch(e => {
+    //         if(!e.statusCode) {
+    //             e.statusCode = 500;
+    //         }
+    //         // to test the throwing error.
+    //         next(e);
+    //         console.log('eeeeeeeeeeeeeeeeeee in the controller ', e)
+    //         return e;
+    //     });
     
     // Aync
-    // try { 
+    try { 
 
-    //     const user = await User.findOne({ email });
-    //         //.then(user => {
+        const user = await User.findOne({ email });
+            //.then(user => {
     
-    //     if(!user) {
-    //         const error = new Error('Unable to find your account.');
-    //         error.statusCode = 401;
-    //         throw error;
-    //     }
+        if(!user) {
+            const error = new Error('Unable to find your account.');
+            error.statusCode = 401;
+            throw error;
+        }
 
-    //     loadedUser = user;
-    //     // return boolean type
-    //     const  isMatched = await bcrypt.compare(password, user.password);
+        loadedUser = user;
+        // return boolean type
+        const  isMatched = await bcrypt.compare(password, user.password);
 
-    //     // })
-    //     //  .then(isMatched => {
+        // })
+        //  .then(isMatched => {
 
-    //     if(!isMatched) {
-    //         const error = new Error('Password is wrong.');
-    //         error.statusCode = 401;
-    //         throw error;
-    //     }
+        if(!isMatched) {
+            const error = new Error('Password is wrong.');
+            error.statusCode = 401;
+            throw error;
+        }
 
-    //     const token = jwt.sign({
-    //         email : loadedUser.email,
-    //         userId: loadedUser._id.toString()
-    //         // setup expiring time : 1hour
-    //         // It is for security reason that the token can be stolen.
-    //         // ************************************
-    //     }, 'xxxx', { expiresIn : '1h' });
+        const token = jwt.sign({
+            email : loadedUser.email,
+            userId: loadedUser._id.toString()
+            // setup expiring time : 1hour
+            // It is for security reason that the token can be stolen.
+            // ************************************
+        }, 'xxxx', { expiresIn : '1h' });
 
-    //         // just in case it is correct
-    //     res.status(200).json({
-    //         token,
-    //         userId: loadedUser._id.toString()
-    //     });
+            // just in case it is correct
+        res.status(200).json({
+            token,
+            userId: loadedUser._id.toString()
+        });
 
-    //     return;
-    // } catch(e) {
+        return;
+    } catch(e) {
 
-    //     //console.log(e)
-    //     if(!e.statusCode) {
-    //         e.statusCode = 500;
-    //     }
-    //     next(e);
-    //     // to test the throwing error.
-    //     return e;
-    // }        
+        //console.log(e)
+        if(!e.statusCode) {
+            e.statusCode = 500;
+        }
+        next(e);
+        // to test the throwing error.
+        return e;
+    }        
     
 }
 
-exports.getStatus = (req, res, next) => {
+exports.getStatus = async (req, res, next) => {
     const userId = req.userId;
     if(!userId) {
         const error = new Error('No logged-in user exists, now.');
@@ -171,23 +171,50 @@ exports.getStatus = (req, res, next) => {
         throw error;
     }
 
-    User.findById(userId)
-        .then(user => {
-            if(!user) {
-                const error = new Error('No logged-in user exists, now.');
-                error.statusCode = 401;
-                throw error;
-            }
-            res.status(200).json({
-                status: user.status
-            });
-        })
-        .catch(e => {
-            if(!e.statusCode) {
-                e.statusCode = 500;
-            }
-            next(e);
-        });
+    let user;
+
+    try {
+        user = await User.findById(userId);
+
+        if(!user) {
+            const error = new Error('No logged-in user exists, now.');
+            error.statusCode = 401;
+            throw error;
+        }
+        
+
+    } catch(e) {
+
+        if(!e.statusCode) {
+            e.statusCode = 500;
+        }
+        next(e);
+
+    }
+
+    res.status(200).json({
+        status: user.status
+    });
+    
+
+
+    // User.findById(userId)
+    //     .then(user => {
+    //         if(!user) {
+    //             const error = new Error('No logged-in user exists, now.');
+    //             error.statusCode = 401;
+    //             throw error;
+    //         }
+    //         res.status(200).json({
+    //             status: user.status
+    //         });
+    //     })
+    //     .catch(e => {
+    //         if(!e.statusCode) {
+    //             e.statusCode = 500;
+    //         }
+    //         next(e);
+    //     });
 }
 
 exports.updateStatus = (req, res, next) => {
