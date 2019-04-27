@@ -1,7 +1,8 @@
 const { validationResult } = require('express-validator/check');
 const fs = require('fs');
 const path = require('path');
-
+const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 const Post = require('../models/post');
 const User = require('../models/user');
 
@@ -118,125 +119,191 @@ exports.getPosts = (req, res, next) => {
 //  because req's fields are always json in RESTUL API.
 // Remember, RESTFUL API does not use "form" in HTML
 //  which requires urlencoded in body-parser.
-exports.createPost = (req, res, next) => {
-    const errors = validationResult(req);
-    /* 
-        [errors] with methods
-        errors:  { isEmpty: [Function],
-        array: [Function],
-        mapped: [Function],
-        formatWith: [Function],
-        throw: [Function] }
-    */
-    // console.log('errors: ', errors);
+// exports.createPost = async (req, res, next) => {
+//     const errors = validationResult(req);
+//     /* 
+//         [errors] with methods
+//         errors:  { isEmpty: [Function],
+//         array: [Function],
+//         mapped: [Function],
+//         formatWith: [Function],
+//         throw: [Function] }
+//     */
+//     // console.log('errors: ', errors);
     
-    // isEmpty is a method of "errors"
-    if(!errors.isEmpty()) {
-        // No need next(error) here because it is not the promise error.
-        // It is an error at express routes
-        console.log('errors from validation: ', errors);
+//     // isEmpty is a method of "errors"
+//     if(!errors.isEmpty()) {
+//         // No need next(error) here because it is not the promise error.
+//         // It is an error at express routes
+//         console.log('errors from validation: ', errors);
 
-        // 2) centralized error handling
-        const error = new Error('Validation Failed. Entered data is incorrect.');
-        error.statusCode = 422;
-        throw error;
+//         // 2) centralized error handling
+//         const error = new Error('Validation Failed. Entered data is incorrect.');
+//         error.statusCode = 422;
+//         throw error;
 
-        // 1) each error handling
-        // return res.status(422).json(
-        //     { 
-        //         message: 'Validation failed. Entered data is incorrect.',
-        //         // array() : a method of "errors" to extract error message out of array.
-        //         errors: errors.array()
-        //     }
-        // );
+//         // 1) each error handling
+//         // return res.status(422).json(
+//         //     { 
+//         //         message: 'Validation failed. Entered data is incorrect.',
+//         //         // array() : a method of "errors" to extract error message out of array.
+//         //         errors: errors.array()
+//         //     }
+//         // );
+//     }
+
+//     if(!req.file) {
+//         const error = new Error('Unable to get image file.');
+//         error.statusCode = 422;
+//         throw error;
+//     }
+
+//     // console.log('req.file: ', req.file);
+//     const userId = req.userId;
+//     const title = req.body.title;
+//     const content = req.body.content;
+
+//     // when using OSX
+//     // const imageUrl = req.file.path;
+//     const imageUrl = req.file.path.replace("\\" ,"/"); 
+    
+//     let creatorProfile;
+
+//     if(!userId) {
+//         const error = new Error('Unable to get userId to create post.');
+//         error.statusCode = 422;
+//         throw error;
+//     }
+
+//     try {
+//         const post = await new Post({
+//             title,
+//             imageUrl,
+//             content,
+//             creator: new ObjectId(req.userId)
+//         }).save();
+        
+//         const user = await User.findById(userId);
+       
+//         user.posts = [ ...user.posts, post ];
+
+//         const savedUser = await user.save();
+
+//         res.status(201).json({
+//             message: 'Post created successfully',
+//             post,
+//             creator: { _id: savedUser._id, name: savedUser.name }
+//         })
+
+//         return savedUser;
+
+//     } catch(e) {
+
+//         if(!e.statusCode) {
+//             e.statusCode = 500;
+//         }
+//         next(e);
+
+//     }
+
+//     // post.save()
+//     //     .then(() => {
+//     //         return User.findById(userId);    
+//     //     })
+//     //     .then(user => {
+//     //         if(!user) {
+//     //             const error = new Error('Unable to find the user who posted');
+//     //             error.statusCode = 422;
+//     //             throw error;
+//     //         }
+//     //         // console.log('user: ==========> ', user)
+//     //         creatorProfile = user;
+//     //         user.posts = [ ...user.posts, post ];
+//     //         return user.save();
+//     //     })
+//     //     .then(() => {
+//     //         //console.log('user =============================> ', user)
+//     //         res.status(201).json({
+//     //             message: 'Post created successfully',
+//     //             post,
+//     //             creator: { _id: creatorProfile._id, name: creatorProfile.name }
+//     //             //{
+//     //             //     _id: post._id,
+//     //             //     title: post.title,
+//     //             //     content: post.content,
+//     //             //     "creator.name": post.creator.name,
+//     //             //     createdAt: post.createdAt
+//     //             // }
+//     //         });
+//     //     })
+//     //     .catch(e => {
+//     //         console.log('e at catch:', e);
+//     //         if(!e.statusCode) {
+//     //             // server side error
+//     //             e.statusCode = 500;
+//     //         }
+//     //         // need next to get to central errorhanding at routes.
+//     //         next(e);
+
+//     //         // 1)
+//     //         // throw new Error(e);
+//     //     });
+
+//     // 201: success and resource was created.
+//     // 200: success! only.
+
+// //     res.status(201).json({
+// //         message: 'Post created successfully',
+// //         post: {
+// //             _id: new Date().toISOString(),
+// //             title,
+// //             content,
+// //             creator: { name: 'Max' },
+// //             createdAt: new Date()
+// //         }
+// //     });
+// }
+
+
+exports.createPost = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const error = new Error('Validation failed, entered data is incorrect.');
+      error.statusCode = 422;
+      throw error;
     }
-
-    if(!req.file) {
-        const error = new Error('Unable to get image file.');
-        error.statusCode = 422;
-        throw error;
+    if (!req.file) {
+      const error = new Error('No image provided.');
+      error.statusCode = 422;
+      throw error;
     }
-
-    // console.log('req.file: ', req.file);
-    const userId = req.userId;
+    const imageUrl = req.file.path;
     const title = req.body.title;
     const content = req.body.content;
-
-    // when using OSX
-    // const imageUrl = req.file.path;
-    const imageUrl = req.file.path.replace("\\" ,"/");    
-    let creatorProfile;
-
-    if(!userId) {
-        const error = new Error('Unable to get userId to create post.');
-        error.statusCode = 422;
-        throw error;
-    }
-
     const post = new Post({
-        title,
-        imageUrl,
-        content,
-        creator: userId
+      title: title,
+      content: content,
+      imageUrl: imageUrl,
+      creator: req.userId
     });
-
-    post.save()
-        .then(() => {
-            return User.findById(userId);    
-        })
-        .then(user => {
-            if(!user) {
-                const error = new Error('Unable to find the user who posted');
-                error.statusCode = 422;
-                throw error;
-            }
-            // console.log('user: ==========> ', user)
-            creatorProfile = user;
-            user.posts = [ ...user.posts, post ];
-            return user.save();
-        })
-        .then(() => {
-            //console.log('user =============================> ', user)
-            res.status(201).json({
-                message: 'Post created successfully',
-                post,
-                creator: { _id: creatorProfile._id, name: creatorProfile.name }
-                //{
-                //     _id: post._id,
-                //     title: post.title,
-                //     content: post.content,
-                //     "creator.name": post.creator.name,
-                //     createdAt: post.createdAt
-                // }
-            });
-        })
-        .catch(e => {
-            console.log('e at catch:', e);
-            if(!e.statusCode) {
-                // server side error
-                e.statusCode = 500;
-            }
-            // need next to get to central errorhanding at routes.
-            next(e);
-
-            // 1)
-            // throw new Error(e);
-        });
-
-    // 201: success and resource was created.
-    // 200: success! only.
-
-//     res.status(201).json({
-//         message: 'Post created successfully',
-//         post: {
-//             _id: new Date().toISOString(),
-//             title,
-//             content,
-//             creator: { name: 'Max' },
-//             createdAt: new Date()
-//         }
-//     });
-}
+    try {
+      await post.save();
+      const user = await User.findById(req.userId);
+      user.posts.push(post);
+      const savedUser = await user.save();
+      res.status(201).json({
+        message: 'Post created successfully!',
+        post: post,
+        creator: { _id: user._id, name: user.name }
+      });
+      return savedUser;
+    } catch (err) {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    }
+  };
 
 exports.getPost = ((req, res, next) => {
     const postId = req.params.postId;

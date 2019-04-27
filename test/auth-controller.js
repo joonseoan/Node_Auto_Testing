@@ -13,7 +13,28 @@ const Auth = require('../controllers/auth');
 
 // BTW, we do not need to test the validation method.
 
-describe('Auth controller - login', function() {
+describe('Auth controller', function() {
+
+    // Before every single case, we can create a document and  "userId"
+    before(function(done) {
+        mongoose
+        .connect(`mongodb+srv://joon:${mongoKey}@firstatlas-drwhc.mongodb.net/test-message`, { useNewUrlParser: true })
+        .then(() => {
+            const user = new User({
+                email: 'xxxx@xxxx.com',
+                password: 'ddddd',
+                name: 'Test',
+                posts: [],
+                // externally set up _id for testing!!!
+                _id: '5cad46f95ceb8237c4e1faff' // must be string 
+            });
+            return user.save();
+        })
+        .then(user => {
+            done();
+        });
+
+    });
 
     /* User.findOne({ email })
         .then(user => {
@@ -53,6 +74,12 @@ describe('Auth controller - login', function() {
             next(e);
 
         }) */
+
+
+    // "BeforeEach" anad AfterEach is called before every "it" is called!!!!!!!!!!!
+    beforeEach(function() {});
+    afterEach(function() {});
+
 
     // pointing the main object
     //  and then entering the mothod to be tested.
@@ -123,72 +150,95 @@ describe('Auth controller - login', function() {
             
         */
 
-
-        mongoose
-        // we need to add a collection for testing. (message ==> test-message) *******
-        .connect(`mongodb+srv://joon:${mongoKey}@firstatlas-drwhc.mongodb.net/test-message`, { useNewUrlParser: true })
+        // 1)
+        // we can creat e connection and document over here.
+        // However, in order to conver all the test scenarios, it should happen before tests
+        // mongoose
+        // // we need to add a collection for testing. (message ==> test-message) *******
+        // .connect(`mongodb+srv://joon:${mongoKey}@firstatlas-drwhc.mongodb.net/test-message`, { useNewUrlParser: true })
         
-        // building test logic
-        .then(() => {
+        // // building test logic
+        // .then(() => {
 
-            // when the req.userId is generated, it is not required to be stored again.
-            // const user = new User({
-            //     email: 'xxxx@xxxx.com',
-            //     password: 'ddddd',
-            //     name: 'Test',
-            //     posts: [],
-            //     // externally set up _id for testing!!!
-            //     _id: '5cad46f95ceb8237c4e1fall' // must be string 
-            // });
-
-            // return user.save();
-        })
-        .then(user => {
+        //     // when the req.userId is generated, it is not required to be stored again.
+        //     const user = new User({
+        //         email: 'xxxx@xxxx.com',
+        //         password: 'ddddd',
+        //         name: 'Test',
+        //         posts: [],
+        //         // externally set up _id for testing!!!
+        //         _id: '5cad46f95ceb8237c4e1faff' // must be string 
+        //     });
+        //     return user.save();
+        // })
+        // .then(user => {
             // need req.userId
             // we need to pass json ({ status: user.status }) which is set as default to the client
 
-            const req = { userId: '5cad46f95ceb8237c4e1faff'};
-            
-            // initial value to be compared 
-            /* 
-                // It is chaining implementing internal felds of res.
-                // For this reason, "this" must be returned for the next field execution.
-                res.status(200).json({
-                    status: user.status
-                });
-            
-            */
-            const res = {
-                statusCode: 500,
-                userStatus: null,
-                status: function(code) {
-                    this.statusCode = code;
-                    
-                    // Must be "this", not this.statusCode
-                    // becaus without this. we can't call "json()" method.!!!!!!!!!!!11
-                    console.log('this: ', this)
-                    return this;
-                },
-
-                // "data": { status: user.status }
-                json: function(data) {
-
-                    console.log(data);
-                    this.userStatus = data.status;
-                }
-            };
-
-            Auth.getStatus(req, res, () => {})
-            .then(() => {
-                console.log('res: ', res)
-                expect(res.statusCode).to.be.equal(200);
-                expect(res.userStatus).to.be.equal('I am new');
-                done();
+        const req = { userId: '5cad46f95ceb8237c4e1faff'};
+        
+        // initial value to be compared 
+        /* 
+            // It is chaining implementing internal felds of res.
+            // For this reason, "this" must be returned for the next field execution.
+            res.status(200).json({
+                status: user.status
             });
-        })
-        .catch(err => {
-            console.log(err);
+        
+        */
+        const res = {
+            statusCode: 500,
+            userStatus: null,
+            status: function(code) {
+                this.statusCode = code;
+                
+                // Must be "this", not this.statusCode
+                // becaus without this. we can't call "json()" method.!!!!!!!!!!!11
+                console.log('this: ', this)
+                return this;
+            },
+
+            // "data": { status: user.status }
+            json: function(data) {
+
+                // console.log(data);
+                this.userStatus = data.status;
+            }
+        };
+
+        Auth.getStatus(req, res, () => {})
+        .then(() => {
+            // console.log('res: ', res)
+            expect(res.statusCode).to.be.equal(200);
+            expect(res.userStatus).to.be.equal('I am new');
+            done();
+            // It should be in "after()"
+            // delte all users so that the duplicated key error in not generated.
+            // User.deleteMany({})
+            //     // must use Promise callback.
+            //     .then(() => {
+            //         // to disconnect mongoose
+            //         // mongoose.disconnect(): promise
+            //         return mongoose.disconnect();
+            //     })
+            //     .then(() => {
+            //         done();
+            //     });    
         });
+        
+        // .catch(err => {
+        //     console.log(err);
+        // });
 
     });
+    // to disconnect and remove the document after thest
+    after(function(done) {
+        User.deleteMany({})
+            .then(() => {
+                return mongoose.disconnect();
+            })
+            .then(() => {
+                done();
+            }); 
+    })
 });
